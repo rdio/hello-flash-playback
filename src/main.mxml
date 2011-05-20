@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+	creationComplete="onCreationComplete()">
+	<mx:Label x="10" y="10" text="Rdio Flash API Example" width="734" height="45" fontSize="28"/>
+	
+	<mx:Script>
+		<![CDATA[
+		private var loader : Loader = null;
+		private var rdio : Object = null;
+		
+		private var domain : String = 'localhost';
+		private var playbackToken : String = 'GAlNi78J_____zlyYWs5ZG02N2pkaHlhcWsyOWJtYjkyN2xvY2FsaG9zdEbwl7EHvbylWSWFWYMZwfc=';
+		
+		private var playingSource : Object = null;
+		private var playingTrack : Object = null;
+		
+		private var playing : Boolean = false;
+		
+		private function onCreationComplete() : void {
+			trace("[EXAMPLE] creation complete");
+			
+            Security.allowDomain("www.rdio.com");
+			loader = new Loader();
+			loader.contentLoaderInfo.addEventListener(Event.INIT, onLoaderInit);
+            loader.load(new URLRequest("http://www.rdio.com/api/swf/?"+
+                    'domain='+encodeURIComponent(domain)+'&'+
+                    'playbackToken='+encodeURIComponent(playbackToken)))
+		}
+			
+		private function onLoaderInit(event : Event) : void {
+			trace('[EXAMPLE] loader init');
+			rdio = loader.content;
+		    rdio.addEventListener("rdioReady", rdioReady);
+            rdio.addEventListener("playStateChanged", playStateChanged);
+            rdio.addEventListener("playingTrackChanged", playingTrackChanged);
+            rdio.addEventListener('playingSourceChanged', playingSourceChanged);
+            rdio.addEventListener('positionChanged', positionChanged);
+		}
+		
+		private function rdioReady(event : Event) : void {
+			trace('[EXAMPLE] rdio ready');
+            rdio.play('a254895');		
+		}
+		
+		private function playStateChanged(event : Event) : void {
+			var playState : int = event['playState'];
+			trace('[EXAMPLE] play state: ' + playState);
+			playing = (playState == 1 || playState == 3);
+			playpause.label = playing?"Pause":"Play";
+		}
+		
+		private function playingTrackChanged(event : Event) : void {
+			this.playingTrack  = event['playingTrack'];
+			var sourcePosition : int = event['sourcePosition'];
+			if (playingTrack) {
+	            track.text = playingTrack['name'];
+	            artist.text = playingTrack['artist'];
+	            album.text = playingTrack['album'];
+	            progress.minimum = 0;
+	            progress.maximum = playingTrack['duration'];
+	        } else {
+	        	track.text = '';
+	        	artist.text = '';
+	        	album.text = '';
+	        }
+		}
+		
+		private function playingSourceChanged(event : Event) : void {
+			this.playingSource = event['playingSource'];
+			if (playingSource) {
+				source_name.text = playingSource['name'];
+				source_artist.text = playingSource['artist'];
+				art.source = playingSource['icon'];
+			} else {
+				source_name.text = '';
+				source_artist.text = '';
+				art.source = '';
+			}
+		}
+		
+		private function positionChanged(event : Event) : void {
+			var position : Number = event['position'];
+			progress.value = position;
+		}
+		
+		private function progressChange() : void {
+			rdio.seek(progress.value);
+		}
+		
+		]]>
+	</mx:Script>
+    <mx:Label x="10" y="106" text="Track" fontWeight="bold"/>
+	<mx:Label x="20" y="132" text="Label" id="track"/>
+	<mx:Label x="20" y="158" text="Label" id="artist"/>
+	<mx:Label x="20" y="184" text="Label" id="album"/>
+	<mx:Label x="10" y="202" text="Source" fontWeight="bold"/>
+	<mx:Label x="20" y="228" text="Label" id="source_name"/>
+	<mx:Label x="20" y="254" text="Label" id="source_artist"/>
+	<mx:Image x="20" y="280" width="200" height="200" id="art"/>
+	<mx:HSlider x="15" y="83" width="328" id="progress" allowTrackClick="true" minimum="0" change="progressChange()" liveDragging="false" enabled="true"/>
+	<mx:Button x="10" y="53" label="Play" id="playpause" width="77" click="playing?rdio.pause():rdio.play()"/>
+	<mx:Button x="95" y="53" label="Previous" click="rdio.previous()"/>
+	<mx:Button x="179" y="53" label="Next" click="rdio.next()"/>
+</mx:Application>
